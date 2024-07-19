@@ -87,6 +87,8 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Record already exists")
 	}
 
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Webhook received and processed"))
 }
 
 func main() {
