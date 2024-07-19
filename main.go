@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/joho/godotenv"
 )
@@ -20,10 +21,14 @@ const (
 
 // Обработчик вебхуков
 func webhookHandler(w http.ResponseWriter, r *http.Request) {
-	// Загружаем переменные окружения из файла .env
-	err := godotenv.Load()
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatal(err)
+	}
+
+	err = godotenv.Load(filepath.Join(dir, ".env"))
+	if err != nil {
+		log.Fatalf("Some error occured. Err: %s", err)
 	}
 
 	// Параметры подключения к базе данных
