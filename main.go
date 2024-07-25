@@ -54,6 +54,8 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println(r.Form)
+
 	// Преобразование данных формы в карту
 	formData := make(map[string]string)
 	for key, values := range r.Form {
@@ -72,24 +74,32 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 
 	leadId := gjson.Get(jsonDataString, "leads[status][0][id]")
 
-	// Проверка существования записи
-	var exists bool
-	query := "SELECT EXISTS(SELECT 1 FROM amo_deals WHERE amo_deal_lead_id = ?)"
-	err = db.QueryRow(query, leadId.String()).Scan(&exists)
-	if err != nil {
-		log.Fatal(err)
+	if leadId.String() == "" {
+		leadId = gjson.Get(jsonDataString, "leads[add][0][id]")
 	}
 
-	// Вставка записи, если она не существует
-	if !exists {
-		insertQuery := "INSERT INTO amo_deals (amo_deal_lead_id, status) VALUES (?, ?)"
-		_, err := db.Exec(insertQuery, leadId.String(), StatusNew)
+	if leadId.String() != "" {
+		fmt.Println(leadId)
+
+		// Проверка существования записи
+		var exists bool
+		query := "SELECT EXISTS(SELECT 1 FROM amo_deals WHERE amo_deal_lead_id = ?)"
+		err = db.QueryRow(query, leadId.String()).Scan(&exists)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println("Record inserted successfully")
-	} else {
-		fmt.Println("Record already exists")
+
+		// Вставка записи, если она не существует
+		if !exists {
+			insertQuery := "INSERT INTO amo_deals (amo_deal_lead_id, status) VALUES (?, ?)"
+			_, err := db.Exec(insertQuery, leadId.String(), StatusNew)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println("Record inserted successfully")
+		} else {
+			fmt.Println("Record already exists")
+		}
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -98,6 +108,6 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/webhook", webhookHandler)
-	log.Println("Server started on :8083")
-	log.Fatal(http.ListenAndServe(":8083", nil))
+	log.Println("Server started on :8085")
+	log.Fatal(http.ListenAndServe(":8085", nil))
 }
